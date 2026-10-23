@@ -552,7 +552,15 @@ void TimingBar::drawFrame(float lineX, float dt) {
 class $modify(JGEditorUI, EditorUI) {
     void onCopy(CCObject* sender) {
         EditorUI::onCopy(sender);
-        auto evts = jg::buildEvents(std::string(m_clipboard));
+        std::string data;
+        if (auto sel = this->getSelectedObjects()) {
+            for (auto obj : CCArrayExt<GameObject*>(sel)) {
+                data += std::string(obj->getSaveString(m_editorLayer));
+                data += ';';
+            }
+        }
+        if (data.empty()) return;
+        auto evts = jg::buildEvents(data);
         auto name = std::string(m_editorLayer->m_level->m_levelName);
         jg::store(name, evts);
         Notification::create(fmt::format("Jump Guide: {} segments saved", evts.size()),

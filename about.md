@@ -13,10 +13,19 @@ Copy a section of your level in the editor, play it, and follow the bar: segment
 - **A streak counter** at the top of the bar that counts your clean presses in a row.
 - **A polished look** with neon glow, a scrolling grid that moves with your speed, a ripple on every successful press, and a soft fade at the top so segments appear out of the dark.
 
+## The in-game menu
+
+- A small **round JG logo** appears in the pause menu and on the level page, before you start playing. It never shows up while you are inside a level.
+- **Drag the logo** anywhere you like. **Tap it** to open the menu, tap **×** to close.
+- The menu has a narrow side rail with five pages: **Guide**, **Style**, **Info**, **Level** and **More**.
+- **Read this level now** reads the level directly, so there is no need to copy anything in the editor.
+- Check boxes and buttons change the settings live: bar on/off, side, accent color, opacity, width, view distance, press offset, glow and grid.
+- **Info overlay** (all optional, all read-only): percent, FPS, clock, attempts this session and best percent this session.
+
 ## How to set it up
 
 1. **Mark your hold sections.** In the editor, place blocks over every part where the player must hold and set them to color channel **1000**. Any color works, dark grey looks best.
-2. **Import your layout.** Select the spikes and the hold blocks (Select All is fine) and tap **Copy**. You will see a message like *"Jump Guide: 24 segments saved"*.
+2. **Read your level.** Open the Jump Guide menu on the level page or in the pause menu and tap **Read this level now**. (You can also select objects in the editor and tap **Copy**.)
 3. **Play the level.** Open the same level (the level name must match) and the bar appears on the side of the screen.
 
 Copy again whenever you change the level, or when you change the spike IDs, the hold color channel or the merge gap in the settings.

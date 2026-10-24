@@ -68,7 +68,8 @@
         "Magenta",
         "Lime",
         "Amber",
-        "Violet"
+        "Violet",
+        "Silver"
       ],
       "name": "Accent Color"
     },
@@ -126,6 +127,37 @@
       "max": 8,
       "name": "Merge Gap (blocks)",
       "description": "Spikes closer than this become one segment."
+    },
+    "show-menu": {
+      "type": "bool",
+      "default": true,
+      "name": "Show Menu Button",
+      "description": "Round logo on the pause menu and the level page. Tap it to open the Jump Guide menu."
+    },
+    "hud-percent": {
+      "type": "bool",
+      "default": false,
+      "name": "Info: Percent"
+    },
+    "hud-fps": {
+      "type": "bool",
+      "default": false,
+      "name": "Info: FPS"
+    },
+    "hud-clock": {
+      "type": "bool",
+      "default": false,
+      "name": "Info: Clock"
+    },
+    "hud-session": {
+      "type": "bool",
+      "default": false,
+      "name": "Info: Attempts (session)"
+    },
+    "hud-best": {
+      "type": "bool",
+      "default": false,
+      "name": "Info: Best % (session)"
     }
   }
 }

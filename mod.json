@@ -5,7 +5,7 @@
   "name": "Jump Guide",
   "version": "v1.0.0",
   "developer": "Kamu",
-  "description": "A side timing bar that shows when to press and when to hold, built from your own level data.",
+  "description": "A clean side timing bar that shows exactly when to press and when to hold. Copy your layout in the editor, play it, and follow the bar: segments slide down to the trigger line, turn green when you press on time, and grow while you hold.",
   "settings": {
     "enabled": { "type": "bool", "default": true, "name": "Enabled" },
     "side": { "type": "string", "default": "Right", "one-of": ["Right", "Left"], "name": "Bar Side" },

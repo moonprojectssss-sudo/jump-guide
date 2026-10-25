@@ -1,11 +1,5 @@
 #pragma once
-#include <Geode/Geode.hpp>
-#include <algorithm>
-#include <cmath>
-#include <string>
-#include <vector>
-
-using namespace geode::prelude;
+#include "Data.hpp"
 
 namespace jg {
 
@@ -35,6 +29,20 @@ inline ccColor4F accentFor(std::string const& name) {
     if (name == "Violet")  return rgba(0.65f, 0.45f, 1.00f);
     if (name == "Silver")  return rgba(0.84f, 0.86f, 0.90f);
     return rgba(0.15f, 0.90f, 1.00f); // Cyan
+}
+
+// "hit" and "miss" colors, swapped for colorblind-friendly pairs
+inline ccColor4F goodColor() {
+    auto m = text("colorblind");
+    if (m == "Off") return rgba(0.20f, 1.00f, 0.45f);
+    if (m == "Tritan") return rgba(0.10f, 0.85f, 0.80f);
+    return rgba(0.25f, 0.65f, 1.00f);
+}
+inline ccColor4F badColor() {
+    auto m = text("colorblind");
+    if (m == "Off") return rgba(1.00f, 0.25f, 0.32f);
+    if (m == "Tritan") return rgba(1.00f, 0.30f, 0.35f);
+    return rgba(1.00f, 0.62f, 0.10f);
 }
 
 // Rounded rectangle from (x0,y0) to (x1,y1), optional border

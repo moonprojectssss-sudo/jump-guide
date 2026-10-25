@@ -1,8 +1,6 @@
 #include "TimingBar.hpp"
 using namespace jg;
 
-static ccColor4F const GREEN = rgba(0.20f, 1.00f, 0.45f);
-static ccColor4F const RED   = rgba(1.00f, 0.25f, 0.32f);
 static ccColor4F const AMBER = rgba(1.00f, 0.78f, 0.20f);
 static ccColor4F const WHITE = rgba(1.00f, 1.00f, 1.00f);
 
@@ -14,7 +12,7 @@ void TimingBar::drawStatic() {
                   rgba(0, 0, 0, 0), 2.f, col(m_accent, 0.06f * (4 - i)));
     }
     // panel
-    roundRect(m_bg, 0, 0, m_w, m_h, 12.f, col(rgba(0.03f, 0.04f, 0.07f), 0.82f),
+    roundRect(m_bg, 0, 0, m_w, m_h, 12.f, col(rgba(0.03f, 0.04f, 0.07f), m_hc ? 0.97f : 0.82f),
               1.6f, col(m_accent, 0.75f));
     // lane
     roundRect(m_bg, m_pad, m_yBot, m_w - m_pad, m_yTop, 8.f,
@@ -45,8 +43,8 @@ void TimingBar::drawEvent(Evt const& e, float ya, float yb) {
     ccColor4F glow = rgba(0, 0, 0, 0);
 
     if (!e.hold) {
-        if (e.hit)       { fill = rgba(0.06f, 0.50f, 0.22f); rim = GREEN; glow = GREEN; }
-        else if (e.done) { fill = rgba(0.42f, 0.09f, 0.12f); rim = RED; }
+        if (e.hit)       { fill = rgba(0.06f, 0.50f, 0.22f); rim = m_good; glow = m_good; }
+        else if (e.done) { fill = rgba(0.42f, 0.09f, 0.12f); rim = m_bad; }
         else if (atLine) { fill = rgba(0.50f * pulse, 0.36f * pulse, 0.06f); rim = AMBER; glow = AMBER; }
     } else if (atLine) {
         rim = m_accent;
@@ -66,13 +64,13 @@ void TimingBar::drawEvent(Evt const& e, float ya, float yb) {
         float sa = std::max(yOf(s.x0), m_yBot + 1.f);
         float sb = std::min(yOf(s.x1), m_yTop - 1.f);
         if (sb - sa < 1.f) continue;
-        roundRect(m_dyn, x0 + 3, sa, x1 - 3, sb, 3.f, col(s.ok ? GREEN : RED, 0.9f));
-        if (m_glowOn && s.ok) glowRect(x0 + 3, sa, x1 - 3, sb, GREEN);
+        roundRect(m_dyn, x0 + 3, sa, x1 - 3, sb, 3.f, col(s.ok ? m_good : m_bad, 0.9f));
+        if (m_glowOn && s.ok) glowRect(x0 + 3, sa, x1 - 3, sb, m_good);
     }
 }
 
 void TimingBar::drawLine(float dt) {
-    ccColor4F lc = m_down ? GREEN : m_accent;
+    ccColor4F lc = m_down ? m_good : m_accent;
     float pulse = 0.6f + 0.4f * std::sin(m_time * 6.f);
     float zone = std::min(m_preSec * m_speed * m_pxU, 46.f);
 
@@ -85,10 +83,11 @@ void TimingBar::drawLine(float dt) {
     tri(m_dyn, {1, m_yLine + 7}, {1, m_yLine - 7}, {10, m_yLine}, col(lc));
     tri(m_dyn, {m_w - 1, m_yLine + 7}, {m_w - 1, m_yLine - 7}, {m_w - 10, m_yLine}, col(lc));
 
+    if (m_reduce) m_flash = 0.f;
     if (m_flash > 0.f) { // ripple when a press lands
         float k = 1.f - m_flash;
         m_glow->drawSegment({m_pad, m_yLine}, {m_w - m_pad, m_yLine}, 4.f + k * 22.f,
-                            col(GREEN, 0.35f * m_flash));
+                            col(m_good, 0.35f * m_flash));
         m_flash = std::max(0.f, m_flash - dt * 3.5f);
     }
 }

@@ -6,11 +6,11 @@
     "mac": "2.2081",
     "ios": "2.2081"
   },
-  "id": "arctium.jump-guide",
-  "name": "Jump Guide",
+  "id": "arctium.assist-menu",
+  "name": "Assist Menu",
   "version": "v1.0.0",
   "developer": "Arctium",
-  "description": "A clean side timing bar that shows exactly when to press and when to hold. Copy your layout in the editor, play it, and follow the bar: segments slide down to the trigger line, turn green when you press on time, and grow while you hold.",
+  "description": "Assist Menu (AM) is a practice and accessibility toolkit: a timing guide bar, practice helpers, a clean HUD, run stats and graphs, volume and accessibility options. Help, not cheats.",
   "settings": {
     "enabled": {
       "type": "bool",
@@ -158,6 +158,123 @@
       "type": "bool",
       "default": false,
       "name": "Info: Best % (session)"
+    },
+    "hud-timer": {
+      "type": "bool",
+      "default": false,
+      "name": "Overlay: Timer"
+    },
+    "hud-clicks": {
+      "type": "bool",
+      "default": false,
+      "name": "Overlay: Click counter"
+    },
+    "hud-cps": {
+      "type": "bool",
+      "default": false,
+      "name": "Overlay: CPS meter"
+    },
+    "hud-progress": {
+      "type": "bool",
+      "default": false,
+      "name": "Overlay: Progress bar"
+    },
+    "hud-bestmark": {
+      "type": "bool",
+      "default": false,
+      "name": "Overlay: Best run marker"
+    },
+    "hud-pos": {
+      "type": "string",
+      "default": "Top left",
+      "one-of": [
+        "Top left",
+        "Top right",
+        "Bottom left",
+        "Bottom right"
+      ],
+      "name": "Overlay Position"
+    },
+    "hud-size": {
+      "type": "float",
+      "default": 1.0,
+      "min": 0.6,
+      "max": 1.6,
+      "name": "Overlay Size"
+    },
+    "death-markers": {
+      "type": "bool",
+      "default": false,
+      "name": "Death Markers",
+      "description": "Shows a small red cross where an attempt ended."
+    },
+    "auto-checkpoints": {
+      "type": "bool",
+      "default": false,
+      "name": "Auto Checkpoints",
+      "description": "Places checkpoints on a timer. Practice mode only."
+    },
+    "checkpoint-timer": {
+      "type": "float",
+      "default": 2.0,
+      "min": 1,
+      "max": 10,
+      "name": "Checkpoint Timer (s)"
+    },
+    "music-volume": {
+      "type": "int",
+      "default": 100,
+      "min": 0,
+      "max": 100,
+      "name": "Music Volume (%)"
+    },
+    "sfx-volume": {
+      "type": "int",
+      "default": 100,
+      "min": 0,
+      "max": 100,
+      "name": "SFX Volume (%)"
+    },
+    "click-sound": {
+      "type": "bool",
+      "default": false,
+      "name": "Click Sounds",
+      "description": "Plays a soft tick every time you press."
+    },
+    "colorblind": {
+      "type": "string",
+      "default": "Off",
+      "one-of": [
+        "Off",
+        "Deutan",
+        "Protan",
+        "Tritan"
+      ],
+      "name": "Colorblind Mode",
+      "description": "Changes the hit and miss colors of the timing bar."
+    },
+    "high-contrast": {
+      "type": "bool",
+      "default": false,
+      "name": "High Contrast"
+    },
+    "large-text": {
+      "type": "bool",
+      "default": false,
+      "name": "Large Text"
+    },
+    "ui-scale": {
+      "type": "int",
+      "default": 100,
+      "min": 70,
+      "max": 130,
+      "name": "UI Scale (%)"
+    },
+    "reduce-effects": {
+      "type": "bool",
+      "default": false,
+      "name": "Reduce Effects",
+      "description": "Turns off pulses and ripples in the Assist Menu and the timing bar."
     }
   }
 }

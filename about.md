@@ -1,57 +1,41 @@
-# Jump Guide
+# Assist Menu (AM)
 
-A clean side timing bar for Geometry Dash that shows you **exactly when to press and when to hold**.
+A practice and accessibility toolkit for Geometry Dash. **Help, not cheats.**
 
-Copy a section of your level in the editor, play it, and follow the bar: segments slide toward a trigger line, turn **green** when you press on time, and keep growing for as long as you hold.
+Assist Menu adds a small round **AM** button to the pause menu and to the level page. Tap it to open a clean panel with everything below. The button never shows up while you are inside a level, so it stays out of your way.
 
-## What you get
+## Open it
 
-- **A timing bar on the side of the screen** while you play, on the left or the right.
-- **Tap segments** for obstacles. When a segment touches the line, press to jump. Hit it and it turns green, miss it and it turns red.
-- **Hold segments** marked with arrows. Keep the button down while the segment crosses the line. The part you held fills in green, and the part you let go of turns red.
-- **Speed-aware movement.** The bar follows the speed of the level, so it moves faster when the level gets faster and slower when it slows down.
-- **A streak counter** at the top of the bar that counts your clean presses in a row.
-- **A polished look** with neon glow, a scrolling grid that moves with your speed, a ripple on every successful press, and a soft fade at the top so segments appear out of the dark.
-
-## The in-game menu
-
-- A small **round JG logo** appears in the pause menu and on the level page, before you start playing. It never shows up while you are inside a level.
+- A small round **AM** logo appears in the pause menu and on the level page, before you start playing.
 - **Drag the logo** anywhere you like. **Tap it** to open the menu, tap **×** to close.
-- The menu has a narrow side rail with five pages: **Guide**, **Style**, **Info**, **Level** and **More**.
-- **Read this level now** reads the level directly, so there is no need to copy anything in the editor.
-- Check boxes and buttons change the settings live: bar on/off, side, accent color, opacity, width, view distance, press offset, glow and grid.
-- **Info overlay** (all optional, all read-only): percent, FPS, clock, attempts this session and best percent this session.
+- The menu has a side rail with seven pages. Drag the list to scroll.
 
-## How to set it up
+## Pages
 
-1. **Mark your hold sections.** In the editor, place blocks over every part where the player must hold and set them to color channel **1000**. Any color works, dark grey looks best.
-2. **Read your level.** Open the Jump Guide menu on the level page or in the pause menu and tap **Read this level now**. (You can also select objects in the editor and tap **Copy**.)
-3. **Play the level.** Open the same level (the level name must match) and the bar appears on the side of the screen.
+**Guide** – a timing bar on the side of the screen that shows exactly when to press and hold. Tap **Read this level** and it reads the level directly, no copying needed. Segments slide to the trigger line and turn green when you press on time, red when you miss, and grow while you hold. Style options: side, accent color, opacity, width, view distance, press offset, glow and a scrolling grid.
 
-Copy again whenever you change the level, or when you change the spike IDs, the hold color channel or the merge gap in the settings.
+**Practice** – *Auto checkpoints* on a timer (practice mode only, normal runs are never touched) and *Death markers*, small red crosses where earlier attempts ended.
 
-## How segments are built
+**Display** – percent, FPS counter, attempt counter, timer, clock and a progress bar, with a position and size you control.
 
-- Every spike from the **Spike Object IDs** list becomes part of a tap segment.
-- Spikes that are close together are merged into one longer segment. The **Merge Gap** setting controls how close is "close".
-- Blocks on the **hold color channel** are merged into one hold segment per continuous run.
-- Ceiling and sideways spikes are ignored by default. Turn off **Upright Spikes Only** to include them.
+**Info** – this session's attempts, best run and clicks, a best run marker, a click counter, a CPS meter, a chart of where your runs ended, a graph of your last 20 runs, and a level info card.
 
-## Settings
+**Audio** – music volume, SFX volume and optional click sounds.
 
-- **Enabled**: turn the bar on or off.
-- **Bar Side**: left or right.
-- **Edge Margin**, **Bar Height**, **Bar Width** and **Opacity**: size and position of the bar.
-- **Accent Color**: Cyan, Magenta, Lime, Amber or Violet.
-- **View Distance**: how far ahead the bar looks. A lower value makes segments move faster.
-- **Press Offset**: how early a segment reaches the line before the obstacle, in milliseconds.
-- **Glow Effects** and **Scrolling Grid**: visual extras you can switch off.
-- **Spike Object IDs**, **Upright Spikes Only**, **Hold Marker Color Channel** and **Merge Gap**: control what counts as an obstacle or a hold.
+**Access** – colorblind mode for the timing bar (Deutan, Protan, Tritan), high contrast, large text, UI scale and a reduce effects switch.
+
+**Controls** – show or hide the menu button, reset its position, and reset your stats or all settings.
+
+## Using the timing guide
+
+1. Open the AM menu on the level page (the level must be downloaded) or in the pause menu.
+2. Tap **Read this level** on the Guide page.
+3. Play the level. The bar appears on the side of the screen.
+
+To mark parts where the player must **hold**, place blocks over them in the editor and set them to color channel **1000**. Read the level again afterwards.
 
 ## Good to know
 
-- Jump Guide is a **practice and learning aid**. It does not press anything for you and does not change how your level plays.
-- It is built for **Geometry Dash 2.2081**. Newer game versions may not work until Geode officially supports them.
-- Your imported data is saved per level name, so you can set up several levels and switch between them.
-
-Found a problem or want a new feature? Let the developer know.
+- Assist Menu is a **practice and learning aid**. It never presses anything for you, never changes hitboxes and never makes a level easier to beat.
+- Built for **Geometry Dash 2.2081**. Newer game versions may not work until Geode officially supports them.
+- All settings are also available in the normal Geode settings screen.

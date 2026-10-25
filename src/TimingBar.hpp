@@ -44,7 +44,7 @@ protected:
     CCDrawNode* m_glow = nullptr;
     CCLabelBMFont* m_label = nullptr;
     std::vector<jg::Evt> m_events;
-    ccColor4F m_accent{};
+    ccColor4F m_accent{}, m_good{}, m_bad{};
 
     float m_w = 0.f, m_h = 0.f, m_pad = 8.f, m_alpha = 1.f;
     float m_yBot = 10.f, m_yLine = 0.f, m_yTop = 0.f, m_pxU = 1.f;
@@ -52,6 +52,7 @@ protected:
     float m_lineX = 0.f, m_lastPx = 0.f, m_speed = 311.58f;
     float m_flash = 0.f, m_time = 0.f;
     bool m_down = false, m_pressed = false, m_grid = true, m_glowOn = true;
+    bool m_hc = false, m_reduce = false;
     int m_streak = 0, m_shown = -99;
     size_t m_first = 0;
 };

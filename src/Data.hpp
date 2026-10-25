@@ -1,9 +1,11 @@
 #pragma once
 #include <Geode/Geode.hpp>
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <deque>
 #include <string>
 #include <vector>
 
@@ -13,7 +15,7 @@ namespace jg {
 
 struct Span { float x0, x1; bool ok; };
 
-// One segment on the bar (spike cluster = tap, marker run = hold)
+// One segment on the timing bar (spike cluster = tap, marker run = hold)
 struct Evt {
     float x0 = 0.f, x1 = 0.f;
     bool hold = false;
@@ -24,13 +26,26 @@ struct Evt {
 
 struct Stats { int objects = 0, spikes = 0, holds = 0; float maxX = 0.f; };
 
-// Shared runtime state (menu, HUD, bar)
+// Runtime state shared by the menu, the overlay and the bar
 struct Shared {
     std::string name;
     Stats stats;
     size_t segs = 0;
     bool has = false;
-    int attempts = 0, best = 0;
+    int attempts = 0, best = 0, clicks = 0, cps = 0;
+    bool armed = false;
+    std::deque<int> history;       // where the last 20 runs ended (percent)
+    int bins[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // runs ended per 10%
+    std::deque<double> clickTimes;
+    CCDrawNode* markerNode = nullptr;
+    std::vector<CCPoint> markerPts;
+
+    void resetSession() {
+        attempts = 0; best = 0; clicks = 0; cps = 0; armed = false;
+        history.clear();
+        clickTimes.clear();
+        for (auto& b : bins) b = 0;
+    }
 };
 inline Shared state;
 
@@ -38,6 +53,76 @@ inline double fnum(char const* k) { return Mod::get()->getSettingValue<double>(k
 inline int inum(char const* k) { return (int)Mod::get()->getSettingValue<int64_t>(k); }
 inline bool flag(char const* k) { return Mod::get()->getSettingValue<bool>(k); }
 inline std::string text(char const* k) { return Mod::get()->getSettingValue<std::string>(k); }
+
+inline double nowSec() {
+    using namespace std::chrono;
+    return duration<double>(steady_clock::now().time_since_epoch()).count();
+}
+
+inline void recordRun(int pct) {
+    pct = std::clamp(pct, 0, 100);
+    state.history.push_back(pct);
+    if (state.history.size() > 20) state.history.pop_front();
+    state.bins[std::min(9, pct / 10)]++;
+}
+
+// Little red crosses where earlier attempts ended (display only)
+inline void redrawMarkers() {
+    auto n = state.markerNode;
+    if (!n) return;
+    n->clear();
+    ccColor4F c{1.f, 0.30f, 0.35f, 0.9f};
+    for (auto& p : state.markerPts) {
+        n->drawSegment(CCPoint(p.x - 6.f, p.y - 6.f), CCPoint(p.x + 6.f, p.y + 6.f), 1.5f, c);
+        n->drawSegment(CCPoint(p.x - 6.f, p.y + 6.f), CCPoint(p.x + 6.f, p.y - 6.f), 1.5f, c);
+    }
+}
+
+inline void addMarker(CCPoint p) {
+    state.markerPts.push_back(p);
+    if (state.markerPts.size() > 60) state.markerPts.erase(state.markerPts.begin());
+    redrawMarkers();
+}
+
+// ---- helpers that quietly do nothing when this game version lacks a member ----
+
+template <class PL> inline bool isPractice(PL* pl) {
+    if constexpr (requires { pl->m_isPracticeMode; }) return pl && pl->m_isPracticeMode;
+    else return false;
+}
+
+template <class PL> inline bool tryCheckpoint(PL* pl) {
+    if constexpr (requires { pl->createCheckpoint(); }) {
+        if (!pl) return false;
+        pl->createCheckpoint();
+        return true;
+    } else return false;
+}
+
+template <class PL> inline CCNode* objectLayerOf(PL* pl) {
+    if constexpr (requires { pl->m_objectLayer; }) return pl->m_objectLayer;
+    else return nullptr;
+}
+
+template <class E = FMODAudioEngine> inline E* audio() {
+    if constexpr (requires { E::sharedEngine(); }) return E::sharedEngine();
+    else return nullptr;
+}
+
+template <class E> inline void musicVolImpl(E* e, float v) {
+    if constexpr (requires { e->setBackgroundMusicVolume(v); }) { if (e) e->setBackgroundMusicVolume(v); }
+}
+template <class E> inline void sfxVolImpl(E* e, float v) {
+    if constexpr (requires { e->setEffectsVolume(v); }) { if (e) e->setEffectsVolume(v); }
+}
+template <class E> inline void clickImpl(E* e) {
+    if constexpr (requires { e->playEffect(std::string("playSound_01.ogg"), 1.f, 1.f, 0.5f); }) {
+        if (e) e->playEffect(std::string("playSound_01.ogg"), 1.f, 1.f, 0.5f);
+    }
+}
+inline void setMusicVolume(float v) { musicVolImpl(audio(), v); }
+inline void setSfxVolume(float v) { sfxVolImpl(audio(), v); }
+inline void playClick() { clickImpl(audio()); }
 
 inline float unitsPerSec(float s) {
     if (s < 0.8f) return 251.16f;
@@ -145,7 +230,7 @@ inline std::vector<Evt> buildEvents(std::string const& s, Stats* st = nullptr) {
     return out;
 }
 
-// Read the level that is currently being played (used from the pause menu)
+// Read the level that is being played (pause menu)
 inline std::string levelStringFromPlay(PlayLayer* pl) {
     std::string data;
     if (!pl || !pl->m_objects) return data;
@@ -157,7 +242,7 @@ inline std::string levelStringFromPlay(PlayLayer* pl) {
     return data;
 }
 
-// Read a level from its saved data (used from the level page, before playing)
+// Read a level from its saved data (level page, before playing)
 inline std::string levelStringFromLevel(GJGameLevel* lvl) {
     if (!lvl) return {};
     std::string raw = std::string(lvl->m_levelString);
@@ -193,7 +278,7 @@ inline std::vector<Evt> unpack(std::string const& s) {
     return v;
 }
 
-inline std::string keyFor(std::string const& name) { return "jg-data:" + name; }
+inline std::string keyFor(std::string const& name) { return "am-data:" + name; }
 
 inline void store(std::string const& name, std::vector<Evt> const& v) {
     Mod::get()->setSavedValue<std::string>(keyFor(name), pack(v));

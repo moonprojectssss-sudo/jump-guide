@@ -15,7 +15,7 @@ bool JGMenu::setup(GJGameLevel* level, bool inPause) {
     m_level = level;
     m_inPause = inPause;
     m_win = CCDirector::get()->getWinSize();
-    m_baseScale = std::min(1.f, std::min(m_win.height * 0.92f / PH, m_win.width * 0.94f / PW));
+    m_baseScale = std::min(1.f, std::min(m_win.height * 0.94f / PH, m_win.width * 0.96f / PW));
     this->setTouchEnabled(true);
 
     m_gw = CCDrawNode::create();
@@ -31,7 +31,7 @@ bool JGMenu::setup(GJGameLevel* level, bool inPause) {
     m_gp = CCDrawNode::create();
     m_root->addChild(m_gp, 0);
 
-    m_bubLab = CCLabelBMFont::create("JG", "bigFont.fnt");
+    m_bubLab = CCLabelBMFont::create("AM", "bigFont.fnt");
     this->addChild(m_bubLab, 2);
 
     auto* mod = Mod::get();
@@ -67,8 +67,9 @@ void JGMenu::update(float dt) {
     bool show = m_openT > 0.01f;
     m_root->setVisible(show);
     if (show) {
+        float us = jg::inum("ui-scale") / 100.f;
         float s = 0.86f + 0.14f * jg::easeOutBack(std::min(1.f, m_openT));
-        m_root->setScale(m_baseScale * s);
+        m_root->setScale(m_baseScale * us * s);
         this->drawPanel();
     }
 }
@@ -78,25 +79,28 @@ void JGMenu::drawWorld() {
     m_gw->clear();
     if (m_openT > 0.01f) {
         jg::roundRect(m_gw, 0.f, 0.f, m_win.width, m_win.height, 0.01f,
-                      jg::rgba(0.f, 0.f, 0.f, 0.5f * m_openT));
+                      jg::rgba(0.f, 0.f, 0.f, 0.55f * m_openT));
     }
     float bt = m_bubT;
     bool vis = bt > 0.01f;
     m_bubLab->setVisible(vis);
     if (!vis) return;
 
-    float pulse = 0.5f + 0.5f * std::sin(m_time * 2.4f);
-    float r = (20.f + m_pop * 5.f + (m_drag ? 3.f : 0.f)) * jg::easeOutBack(std::min(1.f, bt));
+    bool calm = jg::flag("reduce-effects");
+    float pulse = calm ? 0.f : 0.5f + 0.5f * std::sin(m_time * 2.4f);
+    float us = jg::inum("ui-scale") / 100.f;
+    float r = (20.f + (calm ? 0.f : m_pop * 5.f) + (m_drag ? 3.f : 0.f)) * us *
+              jg::easeOutBack(std::min(1.f, bt));
     CCPoint c = m_bub;
 
     m_gw->drawDot(CCPoint(c.x + 1.5f, c.y - 2.5f), r + 1.f, jg::rgba(0.f, 0.f, 0.f, 0.28f * bt));
     m_gw->drawDot(c, r + 6.f + pulse * 3.f, jg::rgba(1.f, 1.f, 1.f, 0.10f * bt));
-    m_gw->drawDot(c, r + 1.5f, jg::rgba(0.16f, 0.16f, 0.17f, bt));
+    m_gw->drawDot(c, r + 1.5f, jg::rgba(0.10f, 0.11f, 0.10f, bt));
     m_gw->drawDot(c, r - 1.5f, jg::rgba(0.97f, 0.97f, 0.98f, bt));
 
     m_bubLab->setPosition(c);
     m_bubLab->setScale(0.42f * r / 20.f);
-    m_bubLab->setColor(jg::c3(0.16f, 0.16f, 0.17f));
+    m_bubLab->setColor(jg::c3(0.10f, 0.11f, 0.10f));
     m_bubLab->setOpacity((GLubyte)(255.f * std::min(1.f, bt)));
 }
 
@@ -108,8 +112,19 @@ bool JGMenu::ccTouchBegan(CCTouch* t, CCEvent*) {
     if (m_open) { // modal: the panel swallows every touch
         auto lp = m_root->convertToNodeSpace(t->getLocation());
         m_pressId.clear();
+        m_slideId.clear();
+        m_scrolling = false;
+        m_touchStart = lp;
+        m_lastY = lp.y;
+        m_inContent = lp.x >= kX0 - 6.f && lp.x <= kX1 + 10.f && lp.y >= kBot && lp.y <= kTop;
         for (auto& h : m_hits) {
-            if (h.r.containsPoint(lp)) { m_pressId = h.id; break; }
+            if (!h.r.containsPoint(lp)) continue;
+            m_pressId = h.id;
+            if (h.slider) {
+                m_slideId = h.id;
+                if (h.sfn) h.sfn(std::clamp((lp.x - h.sx0) / (h.sx1 - h.sx0), 0.f, 1.f));
+            }
+            break;
         }
         return true;
     }
@@ -123,9 +138,30 @@ bool JGMenu::ccTouchBegan(CCTouch* t, CCEvent*) {
     return true;
 }
 
-// Only the logo can be dragged, the panel stays put
 void JGMenu::ccTouchMoved(CCTouch* t, CCEvent*) {
+    if (m_open) {
+        auto lp = m_root->convertToNodeSpace(t->getLocation());
+        if (!m_slideId.empty()) { // dragging a slider
+            for (auto& h : m_hits) {
+                if (h.id == m_slideId && h.slider && h.sfn) {
+                    h.sfn(std::clamp((lp.x - h.sx0) / (h.sx1 - h.sx0), 0.f, 1.f));
+                    break;
+                }
+            }
+            return;
+        }
+        if (m_inContent) { // drag the list to scroll
+            if (!m_scrolling && std::fabs(lp.y - m_touchStart.y) > 8.f) {
+                m_scrolling = true;
+                m_pressId.clear();
+            }
+            if (m_scrolling) m_scroll = std::clamp(m_scroll + (lp.y - m_lastY), 0.f, m_maxScroll);
+        }
+        m_lastY = lp.y;
+        return;
+    }
     if (!m_drag) return;
+    // only the logo can be dragged, the panel stays put
     auto p = this->convertToNodeSpace(t->getLocation());
     if (std::fabs(p.x - m_startP.x) + std::fabs(p.y - m_startP.y) > 8.f) m_moved = true;
     if (!m_moved) return;
@@ -144,7 +180,18 @@ void JGMenu::ccTouchEnded(CCTouch* t, CCEvent*) {
         }
         return;
     }
-    if (!m_open || m_pressId.empty()) return;
+    if (!m_open) return;
+    if (!m_slideId.empty()) {
+        m_slideId.clear();
+        m_pressId.clear();
+        return;
+    }
+    if (m_scrolling) {
+        m_scrolling = false;
+        m_pressId.clear();
+        return;
+    }
+    if (m_pressId.empty()) return;
     auto lp = m_root->convertToNodeSpace(t->getLocation());
     std::string id = m_pressId;
     m_pressId.clear();
@@ -159,6 +206,8 @@ void JGMenu::ccTouchEnded(CCTouch* t, CCEvent*) {
 
 void JGMenu::ccTouchCancelled(CCTouch*, CCEvent*) {
     m_drag = false;
+    m_scrolling = false;
+    m_slideId.clear();
     m_pressId.clear();
 }
 
@@ -170,6 +219,7 @@ void JGMenu::openMenu() {
 void JGMenu::closeMenu() {
     m_open = false;
     m_pressId.clear();
+    m_slideId.clear();
     jg::applyLive();
 }
 
@@ -210,10 +260,19 @@ void JGMenu::resetAll() {
     m->setSettingValue<bool>("glow", true);
     m->setSettingValue<bool>("scroll-grid", true);
     m->setSettingValue<bool>("upright-only", true);
-    m->setSettingValue<bool>("hud-percent", false);
-    m->setSettingValue<bool>("hud-fps", false);
-    m->setSettingValue<bool>("hud-clock", false);
-    m->setSettingValue<bool>("hud-session", false);
-    m->setSettingValue<bool>("hud-best", false);
+    for (char const* k : {"hud-percent", "hud-fps", "hud-timer", "hud-clock", "hud-session",
+                          "hud-best", "hud-clicks", "hud-cps", "hud-progress", "hud-bestmark",
+                          "auto-checkpoints", "death-markers", "click-sound", "high-contrast",
+                          "large-text", "reduce-effects"}) {
+        m->setSettingValue<bool>(k, false);
+    }
+    m->setSettingValue<std::string>("hud-pos", "Top left");
+    m->setSettingValue<double>("hud-size", 1.0);
+    m->setSettingValue<double>("checkpoint-timer", 2.0);
+    m->setSettingValue<int64_t>("music-volume", 100);
+    m->setSettingValue<int64_t>("sfx-volume", 100);
+    m->setSettingValue<std::string>("colorblind", "Off");
+    m->setSettingValue<int64_t>("ui-scale", 100);
+    m->setSettingValue<bool>("show-menu", true);
     jg::applyLive();
 }

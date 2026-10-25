@@ -41,8 +41,12 @@ void TimingBar::applySettings() {
     m_viewUnits = (float)jg::fnum("view-distance") * 30.f;
     m_offsetSec = jg::inum("press-offset") / 1000.f;
     m_grid = jg::flag("scroll-grid");
-    m_glowOn = jg::flag("glow");
+    m_hc = jg::flag("high-contrast");
+    m_reduce = jg::flag("reduce-effects");
+    m_glowOn = jg::flag("glow") && !m_reduce;
     m_accent = jg::accentFor(jg::text("accent"));
+    m_good = jg::goodColor();
+    m_bad = jg::badColor();
 
     m_yLine = m_h * 0.22f;
     m_yTop = m_h - 30.f;

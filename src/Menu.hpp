@@ -5,27 +5,42 @@
 #include <set>
 
 namespace jg {
-// Re-reads settings in every live widget (bar, info overlay)
+// Re-reads settings in every live widget (bar, overlay)
 inline void applyLive() {
     if (auto b = TimingBar::get()) b->applySettings();
     if (auto h = InfoHud::get()) h->applySettings();
 }
+// Called whenever a setting is changed from the menu
+inline void onChanged(std::string const& key) {
+    if (key == "music-volume") setMusicVolume(inum("music-volume") / 100.f);
+    else if (key == "sfx-volume") setSfxVolume(inum("sfx-volume") / 100.f);
+    applyLive();
+}
 }
 
-// Small draggable round logo. Tap it to open the menu panel.
+// Small draggable round logo. Tap it to open the Assist Menu panel.
 // Only added to the pause menu and the level page, never inside a level.
 class JGMenu : public CCLayer {
 public:
     static JGMenu* create(GJGameLevel* level, bool inPause);
 
 protected:
-    struct Hit { std::string id; CCRect r; std::function<void()> fn; };
+    struct Hit {
+        std::string id;
+        CCRect r;
+        std::function<void()> fn;
+        bool slider = false;
+        float sx0 = 0.f, sx1 = 0.f;
+        std::function<void(float)> sfn;
+    };
     struct Lab { CCLabelBMFont* n = nullptr; std::string s; };
 
-    static constexpr float PW = 380.f, PH = 270.f;
-    static constexpr float kX0 = 86.f, kX1 = 366.f, kRH = 22.f;
-    static float tabY(int i) { return 190.f - i * 40.f; }
-    static float rowY(int i) { return 202.f - i * 26.f; }
+    static constexpr float PW = 410.f, PH = 300.f;
+    static constexpr float kX0 = 92.f, kX1 = 396.f, kRH = 26.f;
+    static constexpr float kTop = PH - 48.f, kBot = 10.f;
+    static float tabY(int i) { return PH - 68.f - 34.f * i; }
+    float rowY(int i) const { return kTop - kRH * (i + 1) + m_scroll; }
+    bool vis(float y, float h = kRH) const { return y >= kBot - 0.5f && y + h <= kTop + 0.5f; }
 
     // core (Menu.cpp)
     bool setup(GJGameLevel* level, bool inPause);
@@ -53,16 +68,20 @@ protected:
              float sc, ccColor3B col, float ax);
     void addHit(std::string const& id, float x0, float y0, float x1, float y1,
                 std::function<void()> fn);
-    void cardAt(float y);
+    void rowBase(std::string const& id, std::string const& label, float y);
+    void rowHead(std::string const& id, std::string const& txt, float y);
     void rowText(std::string const& id, std::string const& txt, float y);
     void rowInfo(std::string const& id, std::string const& label, std::string const& value, float y);
-    void rowCheck(std::string const& id, std::string const& label, std::string const& key, float y);
-    void rowButton(std::string const& id, std::string const& label, float y, bool primary,
-                   std::function<void()> fn);
-    void rowStep(std::string const& id, std::string const& label, std::string const& key,
-                 bool isInt, double lo, double hi, double step, std::string const& suffix, float y);
+    void rowSwitch(std::string const& id, std::string const& label, std::string const& key, float y);
+    void rowSlider(std::string const& id, std::string const& label, std::string const& key,
+                   bool isInt, double lo, double hi, double step, int dec,
+                   std::string const& suffix, float y);
     void rowCycle(std::string const& id, std::string const& label, std::string const& key,
                   std::vector<std::string> const& opts, float y);
+    void rowAction(std::string const& id, std::string const& label, std::string const& btn,
+                   float y, std::function<void()> fn);
+    void chartHeat(float y);
+    void chartGraph(float y);
 
     GJGameLevel* m_level = nullptr;
     bool m_inPause = false;
@@ -75,10 +94,12 @@ protected:
     std::set<std::string> m_used;
     std::map<std::string, float> m_anim;
     std::vector<Hit> m_hits;
-    std::string m_pressId, m_status;
-    CCPoint m_bub, m_dragOff, m_startP;
+    std::string m_pressId, m_slideId, m_status;
+    CCPoint m_bub, m_dragOff, m_startP, m_touchStart;
     bool m_open = false, m_drag = false, m_moved = false;
+    bool m_scrolling = false, m_inContent = false;
     float m_openT = 0.f, m_bubT = 0.f, m_time = 0.f, m_dt = 0.016f;
-    float m_tabY = 190.f, m_pop = 0.f, m_baseScale = 1.f;
+    float m_tabY = 232.f, m_pop = 0.f, m_baseScale = 1.f, m_lastY = 0.f;
+    float m_scroll = 0.f, m_maxScroll = 0.f, m_contentH = 0.f;
     int m_tab = 0;
 };

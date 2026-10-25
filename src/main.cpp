@@ -6,30 +6,45 @@
 #include <Geode/ui/Notification.hpp>
 #include "Menu.hpp"
 
-// Inside a level: timing bar + info overlay. The menu is NOT added here.
+// Inside a level: timing bar, info overlay, run history. The menu is NOT added here.
 class $modify(JGPlayLayer, PlayLayer) {
     bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
         if (!PlayLayer::init(level, useReplay, dontCreateObjects)) return false;
-        jg::state.attempts = 0;
-        jg::state.best = 0;
+        jg::state.resetSession();
+        jg::state.markerPts.clear();
+        jg::state.markerNode = nullptr;
 
         if (auto bar = TimingBar::create()) {
             bar->loadFor(std::string(level->m_levelName));
             m_uiLayer->addChild(bar, 50);
         }
         if (auto hud = InfoHud::create()) m_uiLayer->addChild(hud, 49);
+
+        // layer for the "death markers" (if this game version exposes the object layer)
+        if (auto ol = jg::objectLayerOf(this)) {
+            auto n = CCDrawNode::create();
+            ol->addChild(n, 1000);
+            jg::state.markerNode = n;
+        }
         return true;
     }
 
     void resetLevel() {
-        int reached = this->getCurrentPercentInt(); // where this attempt ended
+        int reached = this->getCurrentPercentInt(); // where the attempt that just ended got to
+        CCPoint where = m_player1 ? m_player1->getPosition() : CCPoint(0.f, 0.f);
         PlayLayer::resetLevel();
-        jg::state.best = std::max(jg::state.best, reached);
+
+        if (jg::state.armed) { // skip the very first reset when the level loads
+            jg::recordRun(reached);
+            jg::state.best = std::max(jg::state.best, reached);
+            if (jg::flag("death-markers") && reached > 0 && reached < 100) jg::addMarker(where);
+        }
+        jg::state.armed = true;
         jg::state.attempts++;
     }
 };
 
-// Pause menu: round logo appears here
+// Pause menu: the round logo appears here
 class $modify(JGPauseLayer, PauseLayer) {
     void customSetup() {
         PauseLayer::customSetup();
@@ -40,7 +55,7 @@ class $modify(JGPauseLayer, PauseLayer) {
     }
 };
 
-// Level page (before playing): round logo appears here too
+// Level page (before playing): the round logo appears here too
 class $modify(JGInfoLayer, LevelInfoLayer) {
     bool init(GJGameLevel* level, bool challenge) {
         if (!LevelInfoLayer::init(level, challenge)) return false;
@@ -51,13 +66,17 @@ class $modify(JGInfoLayer, LevelInfoLayer) {
     }
 };
 
-// Jump button feeds the bar
+// Jump button: feeds the timing bar and the click counter
 class $modify(JGBaseLayer, GJBaseGameLayer) {
     void handleButton(bool down, int button, bool isPlayer1) {
         GJBaseGameLayer::handleButton(down, button, isPlayer1);
-        if (button == 1) {
-            if (auto bar = TimingBar::get()) bar->onButton(down);
+        if (button != 1) return;
+        if (down) {
+            jg::state.clicks++;
+            jg::state.clickTimes.push_back(jg::nowSec());
+            if (jg::flag("click-sound")) jg::playClick();
         }
+        if (auto bar = TimingBar::get()) bar->onButton(down);
     }
 };
 
@@ -76,7 +95,7 @@ class $modify(JGEditorUI, EditorUI) {
         auto evts = jg::buildEvents(data);
         auto name = std::string(m_editorLayer->m_level->m_levelName);
         jg::store(name, evts);
-        Notification::create(fmt::format("Jump Guide: {} segments saved", evts.size()),
+        Notification::create(fmt::format("Assist Menu: {} segments saved", evts.size()),
                              NotificationIcon::Success, 1.2f)->show();
     }
 };

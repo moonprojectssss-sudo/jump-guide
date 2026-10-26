@@ -34,6 +34,16 @@ bool JGMenu::setup(GJGameLevel* level, bool inPause) {
     m_bubLab = CCLabelBMFont::create("AM", "bigFont.fnt");
     this->addChild(m_bubLab, 2);
 
+    m_banLab = CCLabelBMFont::create("Tap an object to inspect it", "bigFont.fnt");
+    m_banLab->setScale(0.3f);
+    m_banLab->setAnchorPoint(CCPoint(0.f, 0.5f));
+    m_banLab->setVisible(false);
+    this->addChild(m_banLab, 2);
+    m_banBtn = CCLabelBMFont::create("Cancel", "bigFont.fnt");
+    m_banBtn->setScale(0.26f);
+    m_banBtn->setVisible(false);
+    this->addChild(m_banBtn, 2);
+
     auto* mod = Mod::get();
     m_bub = CCPoint((float)mod->getSavedValue<double>("bub-x", m_win.width - 34.0),
                     (float)mod->getSavedValue<double>("bub-y", m_win.height * 0.5));
@@ -59,7 +69,7 @@ void JGMenu::update(float dt) {
     float openGoal = m_open ? 1.f : 0.f;
     m_openT += (openGoal - m_openT) * k;
     if (std::fabs(openGoal - m_openT) < 0.004f) m_openT = openGoal;
-    m_bubT += ((m_open ? 0.f : 1.f) - m_bubT) * k;
+    m_bubT += (((m_open || m_picking) ? 0.f : 1.f) - m_bubT) * k;
     m_pop = std::max(0.f, m_pop - m_dt * 4.f);
 
     this->drawWorld();
@@ -77,6 +87,19 @@ void JGMenu::update(float dt) {
 // Dim backdrop + the small round logo
 void JGMenu::drawWorld() {
     m_gw->clear();
+    m_banLab->setVisible(m_picking);
+    m_banBtn->setVisible(m_picking);
+    if (m_picking) { // slim banner while waiting for a tap on an object
+        float bw = 360.f, bx0 = m_win.width * 0.5f - bw * 0.5f, by0 = m_win.height - 42.f;
+        jg::roundRect(m_gw, bx0, by0, bx0 + bw, by0 + 30.f, 12.f,
+                      jg::rgba(0.06f, 0.07f, 0.06f, 0.9f), 1.f, jg::rgba(1.f, 1.f, 1.f, 0.15f));
+        m_banLab->setPosition(CCPoint(bx0 + 14.f, by0 + 15.f));
+        float cx0 = bx0 + bw - 78.f;
+        jg::roundRect(m_gw, cx0, by0 + 5.f, cx0 + 68.f, by0 + 25.f, 10.f, jg::rgba(1.f, 1.f, 1.f, 0.95f));
+        m_banBtn->setPosition(CCPoint(cx0 + 34.f, by0 + 15.f));
+        m_banBtn->setColor(jg::c3(0.1f, 0.1f, 0.1f));
+        m_cancelRect = CCRect(cx0, by0, 68.f, 30.f);
+    }
     if (m_openT > 0.01f) {
         jg::roundRect(m_gw, 0.f, 0.f, m_win.width, m_win.height, 0.01f,
                       jg::rgba(0.f, 0.f, 0.f, 0.55f * m_openT));
@@ -109,6 +132,7 @@ void JGMenu::registerWithTouchDispatcher() {
 }
 
 bool JGMenu::ccTouchBegan(CCTouch* t, CCEvent*) {
+    if (m_picking) return true; // waiting for a tap on an object
     if (m_open) { // modal: the panel swallows every touch
         auto lp = m_root->convertToNodeSpace(t->getLocation());
         m_pressId.clear();
@@ -139,6 +163,7 @@ bool JGMenu::ccTouchBegan(CCTouch* t, CCEvent*) {
 }
 
 void JGMenu::ccTouchMoved(CCTouch* t, CCEvent*) {
+    if (m_picking) return;
     if (m_open) {
         auto lp = m_root->convertToNodeSpace(t->getLocation());
         if (!m_slideId.empty()) { // dragging a slider
@@ -170,6 +195,21 @@ void JGMenu::ccTouchMoved(CCTouch* t, CCEvent*) {
 }
 
 void JGMenu::ccTouchEnded(CCTouch* t, CCEvent*) {
+    if (m_picking) {
+        auto sp = this->convertToNodeSpace(t->getLocation());
+        if (m_cancelRect.containsPoint(sp)) { this->stopPick(); return; }
+        auto pl = PlayLayer::get();
+        auto ol = jg::objectLayerOf(pl);
+        if (pl && ol && jg::pickAt(pl, ol->convertToNodeSpace(t->getLocation()))) {
+            m_pickMsg = "Picked. Check the details below.";
+            this->stopPick();
+            m_tab = 3;
+            m_scroll = 0.f;
+        } else {
+            m_banLab->setString("Nothing there. Tap closer to an object");
+        }
+        return;
+    }
     if (m_drag) {
         m_drag = false;
         if (m_moved) {
@@ -263,7 +303,9 @@ void JGMenu::resetAll() {
     for (char const* k : {"hud-percent", "hud-fps", "hud-timer", "hud-clock", "hud-session",
                           "hud-best", "hud-clicks", "hud-cps", "hud-progress", "hud-bestmark",
                           "auto-checkpoints", "death-markers", "click-sound", "high-contrast",
-                          "large-text", "reduce-effects"}) {
+                          "large-text", "reduce-effects", "hitboxes", "block-grid", "trail",
+                          "portal-labels", "start-markers", "input-display", "hud-coords",
+                          "hud-mode"}) {
         m->setSettingValue<bool>(k, false);
     }
     m->setSettingValue<std::string>("hud-pos", "Top left");
@@ -273,6 +315,38 @@ void JGMenu::resetAll() {
     m->setSettingValue<int64_t>("sfx-volume", 100);
     m->setSettingValue<std::string>("colorblind", "Off");
     m->setSettingValue<int64_t>("ui-scale", 100);
+    m->setSettingValue<double>("trail-seconds", 3.0);
     m->setSettingValue<bool>("show-menu", true);
     jg::applyLive();
+}
+
+// Inspector: hide the pause screen so the level is visible, then wait for a tap
+void JGMenu::startPick() {
+    if (!(m_inPause && PlayLayer::get())) {
+        m_pickMsg = "Open this from the pause screen.";
+        return;
+    }
+    m_open = false;
+    m_picking = true;
+    jg::state.picking = true;
+    m_pressId.clear();
+    m_hidden.clear();
+    if (auto par = this->getParent()) {
+        if (auto kids = par->getChildren()) {
+            for (auto c : CCArrayExt<CCNode*>(kids)) {
+                if (!c || c == this) continue;
+                m_hidden.push_back({c, c->isVisible()});
+                c->setVisible(false);
+            }
+        }
+    }
+}
+
+void JGMenu::stopPick() {
+    m_picking = false;
+    jg::state.picking = false;
+    for (auto& [n, v] : m_hidden) n->setVisible(v);
+    m_hidden.clear();
+    m_banLab->setString("Tap an object to inspect it");
+    this->openMenu();
 }

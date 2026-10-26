@@ -11,6 +11,7 @@ class $modify(JGPlayLayer, PlayLayer) {
     bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
         if (!PlayLayer::init(level, useReplay, dontCreateObjects)) return false;
         jg::state.resetSession();
+        jg::resetLevelState();
         jg::state.markerPts.clear();
         jg::state.markerNode = nullptr;
 
@@ -25,6 +26,7 @@ class $modify(JGPlayLayer, PlayLayer) {
             auto n = CCDrawNode::create();
             ol->addChild(n, 1000);
             jg::state.markerNode = n;
+            if (auto dv = DebugView::create()) ol->addChild(dv, 999);
         }
         return true;
     }
@@ -71,7 +73,9 @@ class $modify(JGBaseLayer, GJBaseGameLayer) {
     void handleButton(bool down, int button, bool isPlayer1) {
         GJBaseGameLayer::handleButton(down, button, isPlayer1);
         if (button != 1) return;
+        jg::state.down = down;
         if (down) {
+            jg::state.downSince = jg::nowSec();
             jg::state.clicks++;
             jg::state.clickTimes.push_back(jg::nowSec());
             if (jg::flag("click-sound")) jg::playClick();

@@ -1,4 +1,4 @@
-# Assist Menu (AM)
+# Assist Menu (AM) v2.0.0
 
 A practice and accessibility toolkit for Geometry Dash. **Help, not cheats.**
 
@@ -8,7 +8,7 @@ Assist Menu adds a small round **AM** button to the pause menu and to the level 
 
 - A small round **AM** logo appears in the pause menu and on the level page, before you start playing.
 - **Drag the logo** anywhere you like. **Tap it** to open the menu, tap **×** to close.
-- The menu has a side rail with seven pages. Drag the list to scroll.
+- The menu has a side rail with nine pages. Drag the list to scroll.
 
 ## Pages
 
@@ -16,7 +16,11 @@ Assist Menu adds a small round **AM** button to the pause menu and to the level 
 
 **Practice** – *Auto checkpoints* on a timer (practice mode only, normal runs are never touched) and *Death markers*, small red crosses where earlier attempts ended.
 
-**Display** – percent, FPS counter, attempt counter, timer, clock and a progress bar, with a position and size you control.
+**View** – visual aids drawn inside the level: a *hitbox viewer* (red hazards, blue solids, green player), a *block grid*, a *player trail* that shows where you were for the last few seconds, *portal labels* (speed, gravity, mode, size, mirror), *start and checkpoint markers*, and a small *input display* for presses and holds. They are display only and never change how a level plays.
+
+**Inspect** – open the menu from the pause screen, tap **Pick**, then tap any object in the level. It shows the object ID, type, position and color channels. One tap adds the ID to the Spike Object IDs, or sets the hold marker channel, so you never have to guess the numbers.
+
+**Display** – percent, FPS counter, attempt counter, timer, clock and a progress bar, plus player position, rotation, speed, game mode and gravity, with a position and size you control.
 
 **Info** – this session's attempts, best run and clicks, a best run marker, a click counter, a CPS meter, a chart of where your runs ended, a graph of your last 20 runs, and a level info card.
 

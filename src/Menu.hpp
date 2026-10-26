@@ -1,4 +1,5 @@
 #pragma once
+#include "Debug.hpp"
 #include "Hud.hpp"
 #include <functional>
 #include <map>
@@ -9,6 +10,7 @@ namespace jg {
 inline void applyLive() {
     if (auto b = TimingBar::get()) b->applySettings();
     if (auto h = InfoHud::get()) h->applySettings();
+    if (auto d = DebugView::get()) d->applySettings();
 }
 // Called whenever a setting is changed from the menu
 inline void onChanged(std::string const& key) {
@@ -35,10 +37,10 @@ protected:
     };
     struct Lab { CCLabelBMFont* n = nullptr; std::string s; };
 
-    static constexpr float PW = 410.f, PH = 300.f;
+    static constexpr float PW = 410.f, PH = 320.f;
     static constexpr float kX0 = 92.f, kX1 = 396.f, kRH = 26.f;
     static constexpr float kTop = PH - 48.f, kBot = 10.f;
-    static float tabY(int i) { return PH - 68.f - 34.f * i; }
+    static float tabY(int i) { return PH - 68.f - 28.f * i; }
     float rowY(int i) const { return kTop - kRH * (i + 1) + m_scroll; }
     bool vis(float y, float h = kRH) const { return y >= kBot - 0.5f && y + h <= kTop + 0.5f; }
 
@@ -55,6 +57,8 @@ protected:
     void closeMenu();
     void readLevel();
     void resetAll();
+    void startPick();
+    void stopPick();
     std::string levelName() const;
 
     // panel (MenuPanel.cpp)
@@ -102,4 +106,10 @@ protected:
     float m_tabY = 232.f, m_pop = 0.f, m_baseScale = 1.f, m_lastY = 0.f;
     float m_scroll = 0.f, m_maxScroll = 0.f, m_contentH = 0.f;
     int m_tab = 0;
+    bool m_picking = false;
+    CCLabelBMFont* m_banLab = nullptr;
+    CCLabelBMFont* m_banBtn = nullptr;
+    CCRect m_cancelRect;
+    std::string m_pickMsg;
+    std::vector<std::pair<CCNode*, bool>> m_hidden;
 };

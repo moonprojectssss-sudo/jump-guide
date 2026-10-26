@@ -8,9 +8,9 @@
   },
   "id": "arctium.assist-menu",
   "name": "Assist Menu",
-  "version": "v1.0.0",
+  "version": "v2.0.0",
   "developer": "Arctium",
-  "description": "Assist Menu (AM) is a practice and accessibility toolkit: a timing guide bar, practice helpers, a clean HUD, run stats and graphs, volume and accessibility options. Help, not cheats.",
+  "description": "Assist Menu (AM) is a practice and accessibility toolkit: a timing guide bar, practice helpers, hitbox viewer, player trail, object inspector, a clean HUD, run stats and graphs, volume and accessibility options. Help, not cheats.",
   "settings": {
     "enabled": {
       "type": "bool",
@@ -275,6 +275,58 @@
       "default": false,
       "name": "Reduce Effects",
       "description": "Turns off pulses and ripples in the Assist Menu and the timing bar."
+    },
+    "hitboxes": {
+      "type": "bool",
+      "default": false,
+      "name": "Hitbox Viewer",
+      "description": "Red hazards, blue solids, green player. Display only."
+    },
+    "block-grid": {
+      "type": "bool",
+      "default": false,
+      "name": "Block Grid",
+      "description": "Guide lines for every block. Brighter lines every 5 blocks."
+    },
+    "trail": {
+      "type": "bool",
+      "default": false,
+      "name": "Player Trail",
+      "description": "Draws where the player was for the last few seconds."
+    },
+    "trail-seconds": {
+      "type": "float",
+      "default": 3.0,
+      "min": 1,
+      "max": 6,
+      "name": "Trail Length (s)"
+    },
+    "portal-labels": {
+      "type": "bool",
+      "default": false,
+      "name": "Portal Labels",
+      "description": "Names speed, gravity, mode, size and mirror portals."
+    },
+    "start-markers": {
+      "type": "bool",
+      "default": false,
+      "name": "Start and Checkpoint Markers"
+    },
+    "input-display": {
+      "type": "bool",
+      "default": false,
+      "name": "Input Display",
+      "description": "Small indicator for presses and holds."
+    },
+    "hud-coords": {
+      "type": "bool",
+      "default": false,
+      "name": "Overlay: Position and Speed"
+    },
+    "hud-mode": {
+      "type": "bool",
+      "default": false,
+      "name": "Overlay: Mode and Gravity"
     }
   }
 }

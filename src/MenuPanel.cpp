@@ -241,7 +241,7 @@ void JGMenu::drawPanel() {
     roundRect(m_gp, 14.f, PH - 37.f, 40.f, PH - 11.f, 8.f, A(WHITE));
     lab("hd_am", "AM", true, 27.f, PH - 24.f, 0.25f, T_INK, 0.5f);
     lab("hd_title", "Assist Menu", true, 48.f, PH - 24.f, 0.36f, T_WHITE, 0.f);
-    lab("hd_ver", "v1.0.0", true, PW - 52.f, PH - 24.f, 0.2f, T_MUTE, 1.f);
+    lab("hd_ver", "v2.0.0", true, PW - 52.f, PH - 24.f, 0.2f, T_MUTE, 1.f);
 
     float ccx = PW - 26.f, ccy = PH - 24.f;
     float pr = anim("close_a", m_pressId == "close" ? 1.f : 0.f, 20.f);
@@ -254,16 +254,16 @@ void JGMenu::drawPanel() {
     m_gp->drawSegment(CCPoint(84.f, 12.f), CCPoint(84.f, PH - 50.f), 0.6f, A(WHITE, 0.08f));
 
     // rail with the menu choices
-    static char const* names[7] = {"Guide", "Practice", "Display", "Info", "Audio", "Access", "Controls"};
+    static char const* names[9] = {"Guide", "Practice", "View", "Inspect", "Display", "Info", "Audio", "Access", "Controls"};
     m_tabY += (tabY(m_tab) - m_tabY) * std::min(1.f, m_dt * 16.f);
-    roundRect(m_gp, 10.f, m_tabY - 15.f, 78.f, m_tabY + 15.f, 10.f, A(WHITE));
-    for (int i = 0; i < 7; ++i) {
+    roundRect(m_gp, 10.f, m_tabY - 13.f, 78.f, m_tabY + 13.f, 9.f, A(WHITE));
+    for (int i = 0; i < 9; ++i) {
         float cy = tabY(i);
         std::string tid = "tab" + std::to_string(i);
         float on = anim(tid, m_tab == i ? 1.f : 0.f, 14.f);
         float v = lerpf(0.86f, 0.10f, on);
         lab(tid + "_l", names[i], false, 44.f, cy, 0.58f, c3(v, v, v), 0.5f);
-        addHit(tid, 10.f, cy - 15.f, 78.f, cy + 15.f, [this, i] {
+        addHit(tid, 10.f, cy - 13.f, 78.f, cy + 13.f, [this, i] {
             m_tab = i;
             m_scroll = 0.f;
         });
@@ -294,6 +294,7 @@ void JGMenu::tabContent() {
     std::string name = this->levelName();
     bool have = jg::state.has && jg::state.name == name;
     auto& st = jg::state.stats;
+    auto& pk = jg::state.pick;
     int i = 0;
 
     switch (m_tab) {
@@ -333,7 +334,52 @@ void JGMenu::tabContent() {
         rowText("p_n2", "A red cross shows where an attempt ended.", rowY(i++));
         break;
     }
-    case 2: { // Display
+    case 2: { // View: visual aids drawn in the level
+        rowHead("v_h1", "HITBOXES", rowY(i++));
+        rowSwitch("v_hb", "Hitbox viewer", "hitboxes", rowY(i++));
+        rowText("v_n1", "Red hazards, blue solids, green player.", rowY(i++));
+        rowSwitch("v_gr", "Block grid", "block-grid", rowY(i++));
+        rowHead("v_h2", "TRACKING", rowY(i++));
+        rowSwitch("v_tr", "Player trail", "trail", rowY(i++));
+        rowSlider("v_ts", "Trail length", "trail-seconds", false, 1, 6, 0.5, 1, "s", rowY(i++));
+        rowHead("v_h3", "MARKERS", rowY(i++));
+        rowSwitch("v_pl", "Portal labels", "portal-labels", rowY(i++));
+        rowSwitch("v_sc", "Start and checkpoints", "start-markers", rowY(i++));
+        rowHead("v_h4", "INPUT", rowY(i++));
+        rowSwitch("v_in", "Input display", "input-display", rowY(i++));
+        rowText("v_n2", "Display only. Nothing here changes gameplay.", rowY(i++));
+        break;
+    }
+    case 3: { // Inspect: object id and color channel
+        bool canPick = m_inPause && PlayLayer::get();
+        rowHead("o_h1", "OBJECT INSPECTOR", rowY(i++));
+        if (canPick) rowAction("o_pick", "Pick an object", "Pick", rowY(i++), [this] { startPick(); });
+        else rowText("o_na", "Open the menu from the pause screen to pick.", rowY(i++));
+        rowInfo("o_id", "Object ID", pk.has ? fmt::format("{}", pk.id) : std::string("-"), rowY(i++));
+        rowInfo("o_ty", "Type", pk.has ? jg::typeName(pk.type) : std::string("-"), rowY(i++));
+        rowInfo("o_ps", "Position", pk.has ? fmt::format("{:.0f}, {:.0f}", pk.x, pk.y) : std::string("-"), rowY(i++));
+        rowInfo("o_c1", "Color channel",
+                pk.has ? (pk.c1 > 0 ? fmt::format("{}", pk.c1) : std::string("default")) : std::string("-"), rowY(i++));
+        rowInfo("o_c2", "Detail channel",
+                pk.has ? (pk.c2 > 0 ? fmt::format("{}", pk.c2) : std::string("default")) : std::string("-"), rowY(i++));
+        rowHead("o_h2", "USE IT", rowY(i++));
+        rowAction("o_sp", "Add to spike IDs", "Add", rowY(i++), [this] {
+            auto& k = jg::state.pick;
+            if (!k.has) { m_pickMsg = "Pick an object first."; return; }
+            m_pickMsg = jg::addDangerId(k.id) ? fmt::format("ID {} added to spike IDs.", k.id)
+                                              : std::string("That ID is already a spike ID.");
+        });
+        rowAction("o_hc", "Use as hold channel", "Set", rowY(i++), [this] {
+            auto& k = jg::state.pick;
+            int ch = k.c1 > 0 ? k.c1 : k.c2;
+            if (!k.has || ch <= 0) { m_pickMsg = "That object has no color channel."; return; }
+            Mod::get()->setSettingValue<int64_t>("hold-channel", ch);
+            m_pickMsg = fmt::format("Hold channel set to {}.", ch);
+        });
+        rowText("o_msg", m_pickMsg.empty() ? std::string("Spike IDs and hold channel feed the timing guide.") : m_pickMsg, rowY(i++));
+        break;
+    }
+    case 4: { // Display
         rowHead("d_h1", "HUD", rowY(i++));
         rowSwitch("d_p", "Percent", "hud-percent", rowY(i++));
         rowSwitch("d_f", "FPS counter", "hud-fps", rowY(i++));
@@ -341,11 +387,15 @@ void JGMenu::tabContent() {
         rowSwitch("d_t", "Show timer", "hud-timer", rowY(i++));
         rowSwitch("d_c", "Clock", "hud-clock", rowY(i++));
         rowSwitch("d_pb", "Progress bar", "hud-progress", rowY(i++));
+        rowHead("d_h2", "PLAYER", rowY(i++));
+        rowSwitch("d_xy", "Position and speed", "hud-coords", rowY(i++));
+        rowSwitch("d_md", "Mode and gravity", "hud-mode", rowY(i++));
+        rowHead("d_h3", "LAYOUT", rowY(i++));
         rowCycle("d_pos", "HUD position", "hud-pos", {"Top left", "Top right", "Bottom left", "Bottom right"}, rowY(i++));
         rowSlider("d_sz", "HUD size", "hud-size", false, 0.6, 1.6, 0.1, 1, "x", rowY(i++));
         break;
     }
-    case 3: { // Info
+    case 5: { // Info
         rowHead("n_h1", "THIS SESSION", rowY(i++));
         rowInfo("n_a", "Attempts", fmt::format("{}", jg::state.attempts), rowY(i++));
         rowInfo("n_b", "Best run", fmt::format("{}%", jg::state.best), rowY(i++));
@@ -370,7 +420,7 @@ void JGMenu::tabContent() {
         rowAction("n_lr", "Read this level", "Read", rowY(i++), [this] { readLevel(); });
         break;
     }
-    case 4: { // Audio
+    case 6: { // Audio
         rowHead("a_h1", "VOLUME", rowY(i++));
         rowSlider("a_mv", "Music volume", "music-volume", true, 0, 100, 5, 0, "%", rowY(i++));
         rowSlider("a_sv", "SFX volume", "sfx-volume", true, 0, 100, 5, 0, "%", rowY(i++));
@@ -379,7 +429,7 @@ void JGMenu::tabContent() {
         rowSwitch("a_cs", "Click sounds", "click-sound", rowY(i++));
         break;
     }
-    case 5: { // Access
+    case 7: { // Access
         rowHead("x_h1", "VISION", rowY(i++));
         rowCycle("x_cb", "Colorblind mode", "colorblind", {"Off", "Deutan", "Protan", "Tritan"}, rowY(i++));
         rowSwitch("x_hc", "High contrast", "high-contrast", rowY(i++));
@@ -405,7 +455,7 @@ void JGMenu::tabContent() {
         rowAction("c_ss", "Reset session stats", "Reset", rowY(i++), [] { jg::state.resetSession(); });
         rowAction("c_ra", "Reset all settings", "Reset", rowY(i++), [this] { resetAll(); });
         rowHead("c_h3", "ABOUT", rowY(i++));
-        rowText("c_a1", "Assist Menu v1.0.0 by Arctium", rowY(i++));
+        rowText("c_a1", "Assist Menu v2.0.0 by Arctium", rowY(i++));
         rowText("c_a2", "Help, not cheats. A practice aid only.", rowY(i++));
         break;
     }

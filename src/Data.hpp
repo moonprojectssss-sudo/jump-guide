@@ -40,6 +40,23 @@ struct Shared {
     CCDrawNode* markerNode = nullptr;
     std::vector<CCPoint> markerPts;
 
+    // input display
+    bool down = false;
+    double downSince = 0.0;
+
+    // checkpoints seen in practice mode
+    std::vector<CCPoint> checkpoints;
+
+    // object inspector
+    struct Pick {
+        bool has = false;
+        int id = 0, c1 = 0, c2 = 0, type = -1;
+        float x = 0.f, y = 0.f, rot = 0.f;
+        bool flipY = false;
+    } pick;
+    bool picking = false;
+    PlayLayer* cacheOwner = nullptr;
+
     void resetSession() {
         attempts = 0; best = 0; clicks = 0; cps = 0; armed = false;
         history.clear();
@@ -287,6 +304,166 @@ inline void store(std::string const& name, std::vector<Evt> const& v) {
 
 inline std::vector<Evt> load(std::string const& name) {
     return unpack(Mod::get()->getSavedValue<std::string>(keyFor(name), ""));
+}
+
+// ---------------- debug view helpers ----------------
+
+struct CObj { float x = 0.f, y = 0.f; int id = 0, type = -1; GameObject* o = nullptr; };
+inline std::vector<CObj> objCache; // every object of the level, sorted by x
+
+template <class O> inline int objType(O* o) {
+    if constexpr (requires { (int)o->m_objectType; }) return (int)o->m_objectType;
+    else return -1;
+}
+template <class O> inline int objId(O* o) {
+    if constexpr (requires { (int)o->m_objectID; }) return (int)o->m_objectID;
+    else return -1;
+}
+template <class O> inline bool objRect(O* o, CCRect& out) {
+    if constexpr (requires { out = o->getObjectRect(); }) { out = o->getObjectRect(); return true; }
+    else return false;
+}
+
+template <class P> inline std::string modeName(P* p) {
+    if (!p) return "-";
+    if constexpr (requires { p->m_isShip; })  { if (p->m_isShip)  return "Ship"; }
+    if constexpr (requires { p->m_isBird; })  { if (p->m_isBird)  return "UFO"; }
+    if constexpr (requires { p->m_isBall; })  { if (p->m_isBall)  return "Ball"; }
+    if constexpr (requires { p->m_isDart; })  { if (p->m_isDart)  return "Wave"; }
+    if constexpr (requires { p->m_isRobot; }) { if (p->m_isRobot) return "Robot"; }
+    if constexpr (requires { p->m_isSpider; }) { if (p->m_isSpider) return "Spider"; }
+    if constexpr (requires { p->m_isSwing; }) { if (p->m_isSwing) return "Swing"; }
+    return "Cube";
+}
+template <class P> inline bool gravityUp(P* p) {
+    if constexpr (requires { p->m_isUpsideDown; }) return p && p->m_isUpsideDown;
+    else return false;
+}
+template <class PL> inline int checkpointCount(PL* pl) {
+    if constexpr (requires { pl->m_checkpointArray->count(); }) {
+        return pl->m_checkpointArray ? (int)pl->m_checkpointArray->count() : 0;
+    } else return -1;
+}
+
+inline void ensureCache(PlayLayer* pl) {
+    if (!pl) return;
+    if (state.cacheOwner == pl && !objCache.empty()) return;
+    objCache.clear();
+    state.cacheOwner = pl;
+    if (!pl->m_objects) return;
+    for (auto obj : CCArrayExt<GameObject*>(pl->m_objects)) {
+        if (!obj) continue;
+        CObj c;
+        c.o = obj;
+        c.x = obj->getPositionX();
+        c.y = obj->getPositionY();
+        c.id = objId(obj);
+        c.type = objType(obj);
+        if (c.id < 0) { // this game version hides the id: read it from the save string
+            Obj r;
+            std::string s = std::string(obj->getSaveString(pl));
+            readObj(s.c_str(), s.c_str() + s.size(), r);
+            c.id = r.id;
+        }
+        objCache.push_back(c);
+    }
+    std::sort(objCache.begin(), objCache.end(),
+              [](CObj const& a, CObj const& b) { return a.x < b.x; });
+}
+
+// Finds the object near a point (level coordinates) and stores it for the inspector
+inline bool pickAt(PlayLayer* pl, CCPoint p) {
+    ensureCache(pl);
+    CObj const* best = nullptr;
+    float bd = 1e9f;
+    auto lo = std::lower_bound(objCache.begin(), objCache.end(), p.x - 60.f,
+                               [](CObj const& c, float v) { return c.x < v; });
+    for (auto it = lo; it != objCache.end() && it->x <= p.x + 60.f; ++it) {
+        float dx = it->x - p.x, dy = it->y - p.y, d = dx * dx + dy * dy;
+        CCRect r;
+        if (objRect(it->o, r) && r.containsPoint(p)) d *= 0.25f; // prefer what is under the finger
+        if (d < bd) { bd = d; best = &*it; }
+    }
+    if (!best || bd > 60.f * 60.f) return false;
+
+    Obj o;
+    std::string s = std::string(best->o->getSaveString(pl));
+    readObj(s.c_str(), s.c_str() + s.size(), o);
+    auto& k = state.pick;
+    k.has = true;
+    k.id = best->id;
+    k.type = best->type;
+    k.x = best->x;
+    k.y = best->y;
+    k.c1 = o.c1;
+    k.c2 = o.c2;
+    k.rot = o.rot;
+    k.flipY = o.flipY;
+    return true;
+}
+
+inline std::string typeName(int t) {
+    switch (t) {
+        case 0: return "Solid";
+        case 2: return "Hazard";
+        case 7: return "Decoration";
+        case 25: return "Slope";
+        case 3: case 4: return "Gravity portal";
+        case 5: case 6: case 16: case 19: case 26: case 27: case 33: case 41: return "Mode portal";
+        case 17: case 18: return "Size portal";
+        case 20: return "Trigger / modifier";
+        case -1: return "Unknown";
+        default: return fmt::format("Type {}", t);
+    }
+}
+
+// Label for portals, shown by the "Portal labels" option
+inline char const* portalLabel(int id) {
+    switch (id) {
+        case 10: return "Gravity: Down";
+        case 11: return "Gravity: Up";
+        case 12: return "Cube";
+        case 13: return "Ship";
+        case 47: return "Ball";
+        case 111: return "UFO";
+        case 660: return "Wave";
+        case 745: return "Robot";
+        case 1331: return "Spider";
+        case 1933: return "Swing";
+        case 99: return "Size: Normal";
+        case 101: return "Size: Mini";
+        case 45: return "Mirror: On";
+        case 46: return "Mirror: Off";
+        case 286: return "Dual: On";
+        case 287: return "Dual: Off";
+        case 200: return "Speed 0.5x";
+        case 201: return "Speed 1x";
+        case 202: return "Speed 2x";
+        case 203: return "Speed 3x";
+        case 1334: return "Speed 4x";
+        case 747: return "Teleport";
+        default: return nullptr;
+    }
+}
+
+// Adds an object id to the "Spike Object IDs" setting
+inline bool addDangerId(int id) {
+    auto cur = parseIds(text("danger-ids"));
+    if (std::find(cur.begin(), cur.end(), id) != cur.end()) return false;
+    std::string s = text("danger-ids");
+    if (!s.empty()) s += ",";
+    s += std::to_string(id);
+    Mod::get()->setSettingValue<std::string>("danger-ids", s);
+    return true;
+}
+
+inline void resetLevelState() {
+    state.checkpoints.clear();
+    state.pick = Shared::Pick{};
+    state.picking = false;
+    state.down = false;
+    state.cacheOwner = nullptr;
+    objCache.clear();
 }
 
 } // namespace jg

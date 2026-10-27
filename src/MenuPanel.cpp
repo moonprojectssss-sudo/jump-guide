@@ -241,6 +241,9 @@ void JGMenu::drawPanel() {
     roundRect(m_gp, 14.f, PH - 37.f, 40.f, PH - 11.f, 8.f, A(WHITE));
     lab("hd_am", "AM", true, 27.f, PH - 24.f, 0.25f, T_INK, 0.5f);
     lab("hd_title", "Assist Menu", true, 48.f, PH - 24.f, 0.36f, T_WHITE, 0.f);
+    roundRect(m_gp, 158.f, PH - 34.f, 290.f, PH - 14.f, 10.f, A(rgba(0.20f, 0.80f, 0.43f), 0.14f), 0.8f,
+              A(rgba(0.20f, 0.80f, 0.43f), 0.55f));
+    lab("hd_pill", "HELP, NOT CHEATS", true, 224.f, PH - 24.f, 0.19f, c3(0.45f, 0.95f, 0.62f), 0.5f);
     lab("hd_ver", "v2.0.0", true, PW - 52.f, PH - 24.f, 0.2f, T_MUTE, 1.f);
 
     float ccx = PW - 26.f, ccy = PH - 24.f;
@@ -302,11 +305,15 @@ void JGMenu::tabContent() {
         std::string msg = !m_status.empty() ? m_status
             : (have ? fmt::format("{} segments ready", jg::state.segs) : std::string("Level not read yet"));
         rowHead("g_h1", "TIMING GUIDE", rowY(i++));
+        rowInfo("g_run", "Run status",
+                m_inPause ? (jg::state.assisted ? std::string("Assisted, not counted") : std::string("Clean"))
+                          : std::string("-"), rowY(i++));
         rowInfo("g_st", "Level data", msg, rowY(i++));
         rowAction("g_read", "Read this level", "Read", rowY(i++), [this] { readLevel(); });
         rowSwitch("g_en", "Timing bar", "enabled", rowY(i++));
         rowSwitch("g_up", "Upright spikes only", "upright-only", rowY(i++));
         rowHead("g_h2", "STYLE", rowY(i++));
+        rowCycle("g_shape", "Bar shape", "bar-style", {"Ladder", "Classic"}, rowY(i++));
         rowCycle("g_side", "Bar side", "side", {"Right", "Left"}, rowY(i++));
         rowCycle("g_acc", "Accent color", "accent", {"Cyan", "Magenta", "Lime", "Amber", "Violet", "Silver"}, rowY(i++));
         rowSlider("g_op", "Opacity", "opacity", false, 20, 100, 10, 0, "%", rowY(i++));
@@ -316,6 +323,7 @@ void JGMenu::tabContent() {
         rowSwitch("g_gl", "Glow effects", "glow", rowY(i++));
         rowSwitch("g_gr", "Scrolling grid", "scroll-grid", rowY(i++));
         rowText("g_tip", "Tip: mark hold parts with color channel 1000", rowY(i++));
+        rowText("g_nv", "Assist tools mark the run as not counted.", rowY(i++));
         break;
     }
     case 1: { // Practice

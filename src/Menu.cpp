@@ -292,7 +292,8 @@ void JGMenu::resetAll() {
     m->setSettingValue<std::string>("side", "Right");
     m->setSettingValue<int64_t>("margin", 10);
     m->setSettingValue<double>("bar-height", 70.0);
-    m->setSettingValue<int64_t>("bar-width", 54);
+    m->setSettingValue<int64_t>("bar-width", 84);
+    m->setSettingValue<std::string>("bar-style", "Ladder");
     m->setSettingValue<double>("opacity", 100.0);
     m->setSettingValue<std::string>("accent", "Cyan");
     m->setSettingValue<double>("view-distance", 14.0);

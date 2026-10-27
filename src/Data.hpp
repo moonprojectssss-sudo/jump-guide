@@ -55,6 +55,7 @@ struct Shared {
         bool flipY = false;
     } pick;
     bool picking = false;
+    bool assisted = false; // an assist tool was on during this level: the run is not counted
     PlayLayer* cacheOwner = nullptr;
 
     void resetSession() {
@@ -457,7 +458,18 @@ inline bool addDangerId(int id) {
     return true;
 }
 
+// Marks the run as a test run, so progress and completions are not saved.
+// Does nothing (returns false) when this game version has no such flag.
+template <class PL> inline bool setTestMode(PL* pl, bool v) {
+    if constexpr (requires { pl->m_isTestMode = v; }) {
+        if (!pl) return false;
+        pl->m_isTestMode = v;
+        return true;
+    } else return false;
+}
+
 inline void resetLevelState() {
+    state.assisted = false;
     state.checkpoints.clear();
     state.pick = Shared::Pick{};
     state.picking = false;

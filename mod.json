@@ -45,7 +45,7 @@
     },
     "bar-width": {
       "type": "int",
-      "default": 54,
+      "default": 84,
       "min": 32,
       "max": 120,
       "name": "Bar Width (px)"
@@ -327,6 +327,16 @@
       "type": "bool",
       "default": false,
       "name": "Overlay: Mode and Gravity"
+    },
+    "bar-style": {
+      "type": "string",
+      "default": "Ladder",
+      "one-of": [
+        "Ladder",
+        "Classic"
+      ],
+      "name": "Bar Shape",
+      "description": "Ladder: a perspective track with rungs. Classic: the flat panel."
     }
   }
 }

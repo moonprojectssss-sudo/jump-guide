@@ -1,6 +1,17 @@
 #pragma once
 #include "TimingBar.hpp"
+#include <Geode/ui/Notification.hpp>
 #include <ctime>
+
+namespace jg {
+// Tools that help you perform the level. Plain info (FPS, percent, clicks...) does not count.
+inline bool assistActive() {
+    auto b = TimingBar::get();
+    if (b && b->isAssisting()) return true;
+    return flag("hitboxes") || flag("trail") || flag("portal-labels") || flag("block-grid") ||
+           flag("death-markers");
+}
+}
 
 // Read-only overlay while playing + optional practice-mode auto checkpoints.
 // Nothing here changes how a level plays.
@@ -61,6 +72,14 @@ protected:
         m_il->setScale(0.25f);
         m_il->setVisible(false);
         this->addChild(m_il, 2);
+        m_badge = CCLabelBMFont::create("ASSISTED RUN - NOT COUNTED", "bigFont.fnt");
+        m_badge->setScale(0.24f);
+        m_badge->setColor(jg::c3(1.f, 0.78f, 0.20f));
+        m_badge->setOpacity(230);
+        m_badge->setPosition(CCDirector::get()->getWinSize().width * 0.5f,
+                             CCDirector::get()->getWinSize().height - 10.f);
+        m_badge->setVisible(false);
+        this->addChild(m_badge, 3);
         this->applySettings();
         this->scheduleUpdate();
         s_inst = this;
@@ -144,6 +163,16 @@ protected:
         this->drawProgress(pl);
         this->drawInput();
 
+        // assist tools in use: the run is flagged and not counted
+        if (pl && !jg::state.assisted && jg::assistActive()) {
+            jg::state.assisted = true;
+            bool blocked = jg::setTestMode(pl, true);
+            Notification::create(blocked ? "Assist tools on: this run will not be counted"
+                                         : "Assist tools on (this game version cannot block saving)",
+                                 NotificationIcon::Warning, 3.f)->show();
+        }
+        m_badge->setVisible(jg::state.assisted);
+
         m_acc += dt;
         if (m_acc < 0.1f) return;
         m_acc = 0.f;
@@ -189,6 +218,7 @@ protected:
     static inline InfoHud* s_inst = nullptr;
     CCLabelBMFont* m_l = nullptr;
     CCLabelBMFont* m_il = nullptr;
+    CCLabelBMFont* m_badge = nullptr;
     CCDrawNode* m_bar = nullptr;
     std::string m_last = "\x01", m_ilText;
     float m_fps = 60.f, m_acc = 1.f, m_lastPx = 0.f, m_lastPy = 0.f, m_timer = 0.f, m_cpAcc = 0.f;

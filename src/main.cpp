@@ -31,6 +31,12 @@ class $modify(JGPlayLayer, PlayLayer) {
         return true;
     }
 
+    // Assisted runs are never counted as a completion
+    void levelComplete() {
+        if (jg::state.assisted) jg::setTestMode(this, true);
+        PlayLayer::levelComplete();
+    }
+
     void resetLevel() {
         int reached = this->getCurrentPercentInt(); // where the attempt that just ended got to
         CCPoint where = m_player1 ? m_player1->getPosition() : CCPoint(0.f, 0.f);

@@ -12,7 +12,7 @@ Assist Menu adds a small round **AM** button to the pause menu and to the level 
 
 ## Pages
 
-**Guide** – a timing bar on the side of the screen that shows exactly when to press and hold. Tap **Read this level** and it reads the level directly, no copying needed. Segments slide to the trigger line and turn green when you press on time, red when you miss, and grow while you hold. Style options: side, accent color, opacity, width, view distance, press offset, glow and a scrolling grid.
+**Guide** – a timing bar on the side of the screen that shows exactly when to press and hold. Tap **Read this level** and it reads the level directly, no copying needed. Segments slide to the trigger line and turn green when you press on time, red when you miss, and grow while you hold. It comes in two shapes: **Ladder** (a perspective track with rungs, the default) and **Classic**. Style options: shape, side, accent color, opacity, width, view distance, press offset, glow and a scrolling grid.
 
 **Practice** – *Auto checkpoints* on a timer (practice mode only, normal runs are never touched) and *Death markers*, small red crosses where earlier attempts ended.
 
@@ -37,6 +37,10 @@ Assist Menu adds a small round **AM** button to the pause menu and to the level 
 3. Play the level. The bar appears on the side of the screen.
 
 To mark parts where the player must **hold**, place blocks over them in the editor and set them to color channel **1000**. Read the level again afterwards.
+
+## Assisted runs are not counted
+
+Tools that help you perform a level (the timing bar when it has level data, hitbox viewer, player trail, portal labels, block grid and death markers) mark the run as **assisted**. When that happens the run is switched to a test run, so progress and completions are not saved, and a small *ASSISTED RUN - NOT COUNTED* label appears on screen. Plain info such as FPS, percent or click counters does not trigger it. If this game version cannot block saving, you get a warning instead.
 
 ## Good to know
 

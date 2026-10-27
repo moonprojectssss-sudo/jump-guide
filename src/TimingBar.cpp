@@ -42,6 +42,7 @@ void TimingBar::applySettings() {
     m_offsetSec = jg::inum("press-offset") / 1000.f;
     m_grid = jg::flag("scroll-grid");
     m_hc = jg::flag("high-contrast");
+    m_ladder = jg::text("bar-style") == "Ladder";
     m_reduce = jg::flag("reduce-effects");
     m_glowOn = jg::flag("glow") && !m_reduce;
     m_accent = jg::accentFor(jg::text("accent"));

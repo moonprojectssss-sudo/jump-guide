@@ -12,7 +12,7 @@ public:
     void applySettings();
     void resetStreak() { m_streak = 0; m_shown = -99; }
     // true while the bar is visible and has level data, i.e. it is really guiding you
-    bool isAssisting() const { return this->isVisible() && !m_events.empty(); }
+    bool isAssisting() { return this->isVisible() && !m_events.empty(); }
 
     ~TimingBar() override {
         if (s_inst == this) s_inst = nullptr;

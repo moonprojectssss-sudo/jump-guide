@@ -82,6 +82,16 @@ void JGMenu::update(float dt) {
         m_root->setScale(m_baseScale * us * s);
         this->drawPanel();
     }
+
+    // secret egg overlay
+    float eggGoal = m_eggOpen ? 1.f : 0.f;
+    m_eggOpenT += (eggGoal - m_eggOpenT) * k;
+    if (std::fabs(eggGoal - m_eggOpenT) < 0.004f) m_eggOpenT = eggGoal;
+    if (m_eggNode) {
+        bool eggShow = m_eggOpenT > 0.01f;
+        m_eggNode->setVisible(eggShow);
+        if (eggShow) this->drawEgg();
+    }
 }
 
 // Dim backdrop + the small round logo
@@ -132,6 +142,7 @@ void JGMenu::registerWithTouchDispatcher() {
 }
 
 bool JGMenu::ccTouchBegan(CCTouch* t, CCEvent*) {
+    if (m_eggOpen) return true; // the egg is modal
     if (m_picking) return true; // waiting for a tap on an object
     if (m_open) { // modal: the panel swallows every touch
         auto lp = m_root->convertToNodeSpace(t->getLocation());
@@ -163,6 +174,7 @@ bool JGMenu::ccTouchBegan(CCTouch* t, CCEvent*) {
 }
 
 void JGMenu::ccTouchMoved(CCTouch* t, CCEvent*) {
+    if (m_eggOpen) return;
     if (m_picking) return;
     if (m_open) {
         auto lp = m_root->convertToNodeSpace(t->getLocation());
@@ -195,6 +207,20 @@ void JGMenu::ccTouchMoved(CCTouch* t, CCEvent*) {
 }
 
 void JGMenu::ccTouchEnded(CCTouch* t, CCEvent*) {
+    if (m_eggOpen) {
+        if (!m_eggNode) { m_eggOpen = false; return; }
+        auto ep = m_eggNode->convertToNodeSpace(t->getLocation());
+        if (m_eggClose.containsPoint(ep) || !CCRect(0.f, 0.f, EW, EH).containsPoint(ep)) {
+            this->closeEgg();
+            return;
+        }
+        if (m_eggHam.containsPoint(ep)) {
+            m_eggPop = 1.f;
+            int n = Mod::get()->getSavedValue<int>("egg-kuaci", 0) + 1;
+            Mod::get()->setSavedValue<int>("egg-kuaci", n);
+        }
+        return;
+    }
     if (m_picking) {
         auto sp = this->convertToNodeSpace(t->getLocation());
         if (m_cancelRect.containsPoint(sp)) { this->stopPick(); return; }
@@ -350,4 +376,115 @@ void JGMenu::stopPick() {
     m_hidden.clear();
     m_banLab->setString("Tap an object to inspect it");
     this->openMenu();
+}
+
+// ---------------- secret egg: a hamster eating sunflower seeds ----------------
+
+void JGMenu::eggTap() {
+    if (m_time - m_eggLast > 1.2f) m_eggTaps = 0;
+    m_eggLast = m_time;
+    if (++m_eggTaps >= 7) {
+        m_eggTaps = 0;
+        this->buildEgg();
+        if (m_eggNode) {
+            m_eggOpen = true;
+            m_eggPop = 1.f;
+        }
+    }
+}
+
+void JGMenu::closeEgg() {
+    m_eggOpen = false;
+}
+
+void JGMenu::buildEgg() {
+    if (m_eggNode) return;
+    m_eggNode = CCNode::create();
+    m_eggNode->setContentSize(CCSize(EW, EH));
+    m_eggNode->setAnchorPoint(CCPoint(0.5f, 0.5f));
+    m_eggNode->setPosition(CCPoint(m_win.width * 0.5f, m_win.height * 0.5f));
+    m_eggNode->setVisible(false);
+    this->addChild(m_eggNode, 3);
+
+    m_ge = CCDrawNode::create();
+    m_eggNode->addChild(m_ge, 0);
+
+    std::vector<std::string> paths = {
+        std::string("hamster_00.png"_spr), std::string("hamster_01.png"_spr),
+        std::string("hamster_02.png"_spr), std::string("hamster_03.png"_spr),
+        std::string("hamster_04.png"_spr), std::string("hamster_05.png"_spr),
+        std::string("hamster_06.png"_spr), std::string("hamster_07.png"_spr),
+        std::string("hamster_08.png"_spr), std::string("hamster_09.png"_spr),
+        std::string("hamster_10.png"_spr), std::string("hamster_11.png"_spr),
+        std::string("hamster_12.png"_spr), std::string("hamster_13.png"_spr),
+        std::string("hamster_14.png"_spr)};
+    for (auto& p : paths) {
+        auto s = CCSprite::create(p.c_str());
+        if (!s) continue;
+        if (auto tex = s->getTexture()) tex->setAliasTexParameters(); // keep the pixel art crisp
+        s->setPosition(CCPoint(EW * 0.5f, 146.f));
+        s->setVisible(false);
+        m_eggNode->addChild(s, 1);
+        m_eggFrames.push_back(s);
+    }
+
+    m_eggTitle = CCLabelBMFont::create("Hamster Kuaci", "bigFont.fnt");
+    m_eggTitle->setScale(0.36f);
+    m_eggTitle->setPosition(CCPoint(EW * 0.5f - 6.f, EH - 24.f));
+    m_eggTitle->setColor(jg::c3(0.10f, 0.10f, 0.10f));
+    m_eggNode->addChild(m_eggTitle, 2);
+
+    m_eggCount = CCLabelBMFont::create("", "bigFont.fnt");
+    m_eggCount->setScale(0.3f);
+    m_eggCount->setPosition(CCPoint(EW * 0.5f, 44.f));
+    m_eggCount->setColor(jg::c3(0.10f, 0.10f, 0.10f));
+    m_eggNode->addChild(m_eggCount, 2);
+
+    m_eggHint = CCLabelBMFont::create(m_eggFrames.empty() ? "(images missing)" : "Tap the hamster!", "chatFont.fnt");
+    m_eggHint->setScale(0.7f);
+    m_eggHint->setPosition(CCPoint(EW * 0.5f, 20.f));
+    m_eggHint->setColor(jg::c3(0.45f, 0.45f, 0.48f));
+    m_eggNode->addChild(m_eggHint, 2);
+
+    m_eggHam = CCRect(EW * 0.5f - 68.f, 70.f, 136.f, 152.f);
+    m_eggClose = CCRect(EW - 38.f, EH - 40.f, 30.f, 30.f);
+}
+
+void JGMenu::drawEgg() {
+    float a = std::min(1.f, m_eggOpenT);
+    m_eggPop = std::max(0.f, m_eggPop - m_dt * 2.5f);
+    m_eggT += m_dt * (1.f + m_eggPop * 1.5f);
+    m_eggNode->setScale(m_baseScale * (0.85f + 0.15f * jg::easeOutBack(a)));
+
+    m_ge->clear();
+    jg::roundRect(m_ge, -4.f, -7.f, EW + 4.f, EH + 1.f, 22.f, jg::rgba(0.f, 0.f, 0.f, 0.20f * a));
+    jg::roundRect(m_ge, 0.f, 0.f, EW, EH, 20.f, jg::rgba(0.97f, 0.97f, 0.98f, a), 1.6f,
+                  jg::rgba(0.10f, 0.10f, 0.10f, a));
+    m_ge->drawDot(CCPoint(EW - 23.f, EH - 25.f), 11.f, jg::rgba(0.10f, 0.10f, 0.10f, a));
+    m_ge->drawSegment(CCPoint(EW - 27.f, EH - 29.f), CCPoint(EW - 19.f, EH - 21.f), 1.3f, jg::rgba(1.f, 1.f, 1.f, a));
+    m_ge->drawSegment(CCPoint(EW - 27.f, EH - 21.f), CCPoint(EW - 19.f, EH - 29.f), 1.3f, jg::rgba(1.f, 1.f, 1.f, a));
+
+    if (!m_eggFrames.empty()) {
+        int n = (int)m_eggFrames.size();
+        int f = (int)(m_eggT * 10.f) % n; // 10 frames per second
+        if (f != m_eggFrame) {
+            if (m_eggFrame >= 0 && m_eggFrame < n) m_eggFrames[m_eggFrame]->setVisible(false);
+            m_eggFrames[f]->setVisible(true);
+            m_eggFrame = f;
+        }
+        auto s = m_eggFrames[f];
+        s->setScale(1.f + m_eggPop * 0.10f);
+        s->setPosition(CCPoint(EW * 0.5f, 146.f + std::sin(m_eggPop * 3.14159f) * 10.f));
+        s->setOpacity((GLubyte)(255.f * a));
+    }
+
+    int kuaci = Mod::get()->getSavedValue<int>("egg-kuaci", 0);
+    if (kuaci != m_eggShown) {
+        m_eggShown = kuaci;
+        m_eggCount->setString(fmt::format("Kuaci eaten: {}", kuaci).c_str());
+    }
+    GLubyte op = (GLubyte)(255.f * a);
+    m_eggTitle->setOpacity(op);
+    m_eggCount->setOpacity(op);
+    m_eggHint->setOpacity(op);
 }

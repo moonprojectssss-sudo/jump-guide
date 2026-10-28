@@ -57,6 +57,10 @@ protected:
     void closeMenu();
     void readLevel();
     void resetAll();
+    void buildEgg();
+    void drawEgg();
+    void eggTap();
+    void closeEgg();
     void startPick();
     void stopPick();
     std::string levelName() const;
@@ -112,4 +116,17 @@ protected:
     CCRect m_cancelRect;
     std::string m_pickMsg;
     std::vector<std::pair<CCNode*, bool>> m_hidden;
+
+    // secret egg: tap the AM tile in the header 7 times
+    static constexpr float EW = 220.f, EH = 270.f;
+    bool m_eggOpen = false;
+    int m_eggTaps = 0, m_eggFrame = -1, m_eggShown = -1;
+    float m_eggOpenT = 0.f, m_eggT = 0.f, m_eggPop = 0.f, m_eggLast = -10.f;
+    CCNode* m_eggNode = nullptr;
+    CCDrawNode* m_ge = nullptr;
+    std::vector<CCSprite*> m_eggFrames;
+    CCLabelBMFont* m_eggTitle = nullptr;
+    CCLabelBMFont* m_eggCount = nullptr;
+    CCLabelBMFont* m_eggHint = nullptr;
+    CCRect m_eggHam, m_eggClose;
 };

@@ -240,6 +240,7 @@ void JGMenu::drawPanel() {
     // header: AM tile, title, version, close
     roundRect(m_gp, 14.f, PH - 37.f, 40.f, PH - 11.f, 8.f, A(WHITE));
     lab("hd_am", "AM", true, 27.f, PH - 24.f, 0.25f, T_INK, 0.5f);
+    addHit("hd_tile", 12.f, PH - 39.f, 42.f, PH - 9.f, [this] { eggTap(); });
     lab("hd_title", "Assist Menu", true, 48.f, PH - 24.f, 0.36f, T_WHITE, 0.f);
     roundRect(m_gp, 158.f, PH - 34.f, 290.f, PH - 14.f, 10.f, A(rgba(0.20f, 0.80f, 0.43f), 0.14f), 0.8f,
               A(rgba(0.20f, 0.80f, 0.43f), 0.55f));
